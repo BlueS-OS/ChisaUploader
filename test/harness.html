@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Chisa · banco de pruebas</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #0a0a0c;
+        color: #f3efe8;
+        font: 13px/1.6 "Cascadia Mono", Consolas, monospace;
+      }
+      h1 {
+        font-size: 15px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #d0202e;
+      }
+      pre {
+        white-space: pre-wrap;
+        padding: 14px;
+        background: #141419;
+        border: 1px solid rgba(243, 239, 232, 0.14);
+        border-left: 2px solid #d0202e;
+        min-height: 260px;
+      }
+      .ok { color: #4f9d6b; }
+      .bad { color: #d0202e; }
+    </style>
+  </head>
+  <body>
+    <h1>Chisa · banco de pruebas del corte</h1>
+    <pre id="out">esperando…</pre>
+
+    <script src="/page.js"></script>
+    <script>
+      const out = document.getElementById("out");
+      const lines = [];
+      let configured = false;
+
+      function log(text, cls) {
+        lines.push({ text: text, cls: cls });
+        out.textContent = "";
+        for (const line of lines) {
+          const span = document.createElement("span");
+          span.textContent = line.text + "\n";
+          if (line.cls) span.className = line.cls;
+          out.appendChild(span);
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== window) return;
+        const data = event.data;
+        if (!data || data.source !== "chisa-hilo") return;
+
+        if (data.type === "ready" && !configured) {
+          configured = true;
+          window.postMessage(
+            { source: "chisa-hilo-ext", type: "config", active: true, dryRun: false },
+            "*"
+          );
+          setTimeout(run, 350);
+          return;
+        }
+
+        if (data.type === "hit" || data.type === "dry" || data.type === "miss") {
+          log(
+            "[" + data.type + "] " + data.method + " " + data.url +
+            " quitados=" + JSON.stringify(data.removed) +
+            " forzados=" + JSON.stringify(data.forced)
+          );
+        }
+      });
+
+      const payload = {
+        post_type: 2,
+        draft: { id: 1 },
+        canvas_config: { mode: "cloud" },
+        vedit_segment_info: [{ a: 1 }],
+        vedit_project: { x: 1 },
+        edit_common_info: { y: 1 },
+        cloud_edit_is_use_video_canvas: true,
+        title: "prueba",
+        nested: {
+          vedit_common_info: { draft: true, keep: 1 },
+          feature_common_info_list: [{ canvas_config: 1 }],
+        },
+      };
+
+      async function run() {
+        log("config activa · dryRun=false");
+
+        const r1 = await fetch("/api/post", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        log("fetch /api/post -> " + r1.status);
+
+        const req = new Request("/api/request", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const r2 = await fetch(req);
+        log("fetch(Request) /api/request -> " + r2.status);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/xhr");
+        xhr.setRequestHeader("content-type", "application/json");
+        xhr.send(JSON.stringify(payload));
+        log("xhr /api/xhr enviado");
+
+        const r3 = await fetch("/api/other", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ hello: "mundo" }),
+        });
+        log("fetch /api/other (sin disparadores) -> " + r3.status);
+
+        window.postMessage(
+          { source: "chisa-hilo-ext", type: "config", active: true, dryRun: true },
+          "*"
+        );
+        await new Promise((r) => setTimeout(r, 250));
+
+        const r4 = await fetch("/api/dry", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        log("fetch /api/dry (observando) -> " + r4.status);
+
+        log("LISTO");
+      }
+    </script>
+  </body>
+</html>

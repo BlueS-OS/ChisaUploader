@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Chisa · hilo de subida",
+  "version": "0.1.0",
+  "description": "Corta el hilo que ata tu subida de TikTok a la recompresión. Todo local: sin servidores, sin cuentas, sin Telegram.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://www.tiktok.com/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Chisa · hilo de subida"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.tiktok.com/*"],
+      "js": ["page.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.tiktok.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

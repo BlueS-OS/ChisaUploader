@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chisa · hilo de subida</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="head">
+      <span class="seal" aria-hidden="true">千</span>
+      <span class="brand">
+        <strong>Chisa</strong>
+        <em>hilo de subida</em>
+      </span>
+      <span id="previewTag" class="preview-tag" hidden>vista previa</span>
+    </header>
+
+    <section class="status" aria-live="polite">
+      <span class="dot" id="dot"></span>
+      <span class="status-copy">
+        <span class="status-label">Pestaña</span>
+        <strong id="tabState">Comprobando…</strong>
+        <small id="tabHint">—</small>
+      </span>
+    </section>
+
+    <section class="card">
+      <label class="switch-row">
+        <span class="switch-copy">
+          <strong>Cortar el hilo en la subida</strong>
+          <small>Quita los campos de borrador y editor que disparan la recompresión.</small>
+        </span>
+        <input id="active" class="sr" type="checkbox" />
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+
+      <label class="switch-row sub" id="dryRow">
+        <span class="switch-copy">
+          <strong>Solo observar</strong>
+          <small>No modifica nada: apunta lo que cortaría para comprobarlo antes.</small>
+        </span>
+        <input id="dryRun" class="sr" type="checkbox" checked />
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+
+      <div class="rules" aria-label="Campos que se cortan">
+        <span>draft</span>
+        <span>canvas_config</span>
+        <span>vedit_*</span>
+        <span>post_type 3</span>
+      </div>
+    </section>
+
+    <section class="log">
+      <div class="log-head">
+        <h2>Registro</h2>
+        <span class="log-actions">
+          <button id="copy" type="button">Copiar</button>
+          <button id="clear" type="button">Limpiar</button>
+        </span>
+      </div>
+      <ol id="hits" class="hits"></ol>
+      <p id="empty" class="empty">
+        Aún no se ha visto ninguna subida. Abre TikTok, entra en la subida y vuelve aquí.
+      </p>
+    </section>
+
+    <p class="note">
+      Todo ocurre en tu navegador. No hay servidor, ni cuenta, ni Telegram. El vídeo
+      no sale de tu equipo.
+    </p>
+
+    <footer class="foot">
+      <span>千 local · sin servidores</span>
+      <span id="ver">v0.1.0</span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

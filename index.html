@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chisa · hilo de subida</title>
+    <meta
+      name="description"
+      content="Extensión de navegador que corta el hilo entre tu subida y la recompresión de TikTok. Todo local: sin servidores, sin cuentas, sin Telegram."
+    />
+    <meta name="theme-color" content="#0a0a0c" />
+    <meta property="og:title" content="Chisa · hilo de subida" />
+    <meta
+      property="og:description"
+      content="Corta el hilo antes de publicar. Extensión local, sin servidores ni cuentas."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="./docs/preview.png" />
+    <link rel="icon" href="./icons/seal.svg" type="image/svg+xml" />
+    <link rel="icon" href="./icons/icon32.png" sizes="32x32" type="image/png" />
+    <link rel="stylesheet" href="./site/site.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./">
+        <span class="brand-mark" aria-hidden="true">千</span>
+        <span class="brand-text">
+          <strong>Chisa</strong>
+          <em>hilo de subida</em>
+        </span>
+      </a>
+      <nav class="topbar-side" aria-label="Enlaces">
+        <a class="switch" href="https://blues-os.github.io/BlueChisa/">千 taller de hilos</a>
+        <a class="switch" href="https://blues-os.github.io/ZhezhiUploader/">折 Zhezhi</a>
+        <span class="badge">local · sin servidor</span>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">extensión · navegador · local</p>
+          <h1>Corta el hilo<br /><em>antes</em> de publicar.</h1>
+          <p class="lede">
+            TikTok decide si tu vídeo pasa por su editor en la nube —y por tanto si
+            lo recomprime— mirando el JSON que la web envía al publicar. Chisa
+            limpia ese JSON en memoria, justo antes de que salga. El vídeo no se
+            toca y no sale de tu equipo.
+          </p>
+
+          <div class="actions">
+            <a class="btn primary" href="./chisa-ext-0.1.0.zip" download>
+              Descargar extensión
+              <small>zip · 0.1.0</small>
+            </a>
+            <a class="btn" href="#instalar">Cómo se instala</a>
+          </div>
+
+          <ul class="facts">
+            <li><strong>Sin servidores</strong> ni cuentas ni Telegram</li>
+            <li><strong>Sin Device ID</strong> ni listas de baneos</li>
+            <li><strong>Modo observar</strong> para probar sin riesgo</li>
+          </ul>
+        </div>
+
+        <figure class="shot">
+          <img src="./docs/preview.png" width="380" height="600" alt="Popup de la extensión: estado, interruptores y registro de cortes." />
+          <figcaption>el popup · 380 × 600</figcaption>
+        </figure>
+      </section>
+
+      <section id="instalar" class="install">
+        <h2 class="section-title"><span>01</span> Instalarla</h2>
+        <ol class="steps">
+          <li>
+            <strong>Descarga y descomprime</strong>
+            <p>Baja el zip y suéltalo en una carpeta que no vayas a borrar. La extensión se queda ahí: no hay instalador.</p>
+          </li>
+          <li>
+            <strong>Abre <code>edge://extensions</code></strong>
+            <p>En Chrome es <code>chrome://extensions</code>. Activa <b>Modo de desarrollador</b>, arriba a la derecha.</p>
+          </li>
+          <li>
+            <strong>Cargar descomprimida</strong>
+            <p>Elige la carpeta <code>chisa-ext</code>. Fíjala en la barra y ya está: se activa al recargar TikTok.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="rules-block">
+        <h2 class="section-title"><span>02</span> Qué corta</h2>
+        <p class="section-lede">
+          Solo el cuerpo JSON de la petición de subida. Nada de vídeo, bitrate,
+          resolución ni códec.
+        </p>
+
+        <div class="table-wrap">
+          <table class="rules-table">
+            <thead>
+              <tr>
+                <th scope="col">Campo</th>
+                <th scope="col">Qué hace</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>draft</code></td><td>quita el borrador que arrastra el editor</td></tr>
+              <tr><td><code>canvas_config</code></td><td>quita la configuración del lienzo en la nube</td></tr>
+              <tr><td><code>vedit_segment_info</code> · <code>vedit_project</code> · <code>edit_common_info</code></td><td>quita metadatos del editor de vídeo</td></tr>
+              <tr><td><code>cloud_edit_is_use_video_canvas</code></td><td>se fuerza a <code>false</code></td></tr>
+              <tr><td><code>post_type</code></td><td>si vale <code>2</code>, pasa a <code>3</code></td></tr>
+              <tr><td><code>vedit_common_info</code> · <code>feature_common_info_list</code></td><td>se limpian en profundidad</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="section-note">
+          Solo actúa en peticiones del mismo origen o de <code>*.tiktok.com</code>, y
+          solo si el cuerpo es JSON con alguna de esas claves. Un JSON cualquiera de
+          la página se queda intacto. Si algo falla, se envía el original: nunca
+          rompe la subida.
+        </p>
+      </section>
+
+      <section class="modes">
+        <h2 class="section-title"><span>03</span> Probar sin riesgo</h2>
+        <div class="mode-grid">
+          <article class="mode">
+            <h3>Observar</h3>
+            <p>
+              No modifica nada. Apunta en el registro qué campos <em>cortaría</em> en
+              cada subida. Es el modo por defecto y el primer paso.
+            </p>
+            <span class="tag">por defecto</span>
+          </article>
+          <article class="mode">
+            <h3>Cortar</h3>
+            <p>
+              Aplica las reglas al cuerpo real. El registro marca cada entrada como
+              <b>cortado</b> y guarda las rutas exactas que se quitaron.
+            </p>
+            <span class="tag tag-red">cuando ya lo entiendes</span>
+          </article>
+        </div>
+        <p class="section-note">
+          Si una subida aparece como <b>visto · sin cambios</b>, TikTok cambió el
+          payload o usa multipart: el registro dirá qué se está viendo y las reglas
+          están en <code>page.js</code>.
+        </p>
+      </section>
+
+      <section class="limits">
+        <h2 class="section-title"><span>04</span> Lo que no hace</h2>
+        <ul class="limit-list">
+          <li>No sube tu vídeo a ningún servidor propio.</li>
+          <li>No pide Telegram, ni cuenta, ni Device ID, ni banea a nadie.</li>
+          <li>No recodifica ni «mejora» la calidad: eso depende del archivo y de TikTok.</li>
+          <li>No funciona en la app móvil, solo en la web.</li>
+          <li>No toca cuerpos <code>multipart/form-data</code> ni firmados.</li>
+        </ul>
+      </section>
+
+      <section class="warn">
+        <p>
+          <strong>Ojo.</strong> Manipular el payload de subida va contra los términos
+          de TikTok y puede costar la cuenta. Empieza con una cuenta de prueba y el
+          modo observar. Sin probar todavía contra una subida real: el motor está
+          verificado, el efecto final hay que medirlo.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="foot-left">
+        <span class="seal-mini" aria-hidden="true">千</span>
+        <span>Chisa · hilo de subida · v0.1.0</span>
+      </div>
+      <nav class="foot-links">
+        <a href="https://github.com/BlueS-OS/ChisaUploader">código</a>
+        <a href="https://blues-os.github.io/BlueChisa/">taller de hilos</a>
+        <a href="./README.md">léeme</a>
+      </nav>
+    </footer>
+  </body>
+</html>

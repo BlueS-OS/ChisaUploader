@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Chisa · prueba del puente</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #0a0a0c;
+        color: #f3efe8;
+        font: 13px/1.7 "Cascadia Mono", Consolas, monospace;
+      }
+      li { margin-bottom: 4px; }
+      .ok { color: #4f9d6b; }
+      .bad { color: #d0202e; }
+    </style>
+  </head>
+  <body>
+    <h1>Chisa · prueba del puente (content.js)</h1>
+    <ol id="out"></ol>
+
+    <script>
+      /* Stub mínimo de las APIs de extensión para probar content.js en una
+         página normal. No forma parte de la extensión. */
+      window.__saved = {};
+      window.chrome = {
+        storage: {
+          local: {
+            get: function (keys, cb) {
+              cb({ chisaHilo: { active: true, dryRun: false } });
+            },
+            set: function (obj) {
+              Object.assign(window.__saved, obj);
+            },
+          },
+          onChanged: { addListener: function (fn) { window.__onChanged = fn; } },
+        },
+        runtime: {
+          onMessage: { addListener: function (fn) { window.__onMessage = fn; } },
+        },
+      };
+    </script>
+    <script src="/content.js"></script>
+    <script>
+      const out = document.getElementById("out");
+      const results = [];
+
+      function check(name, pass, detail) {
+        results.push({ name: name, pass: pass, detail: detail || "" });
+        const li = document.createElement("li");
+        li.className = pass ? "ok" : "bad";
+        li.textContent = (pass ? "OK  " : "FALLO  ") + name + (detail ? " — " + detail : "");
+        out.appendChild(li);
+      }
+
+      let gotConfig = null;
+      window.addEventListener("message", function (event) {
+        if (event.source !== window) return;
+        const data = event.data;
+        if (data && data.source === "chisa-hilo-ext" && data.type === "config") {
+          gotConfig = data;
+        }
+      });
+
+      /* El script de página se anuncia cuando está listo; el puente responde
+         con la config. Probamos ese saludo, no el empujón inicial. */
+      window.postMessage({ source: "chisa-hilo", type: "ready" }, "*");
+
+      setTimeout(function () {
+        check(
+          "empuja la config al script de página",
+          !!gotConfig && gotConfig.active === true && gotConfig.dryRun === false,
+          JSON.stringify(gotConfig)
+        );
+
+        window.postMessage(
+          {
+            source: "chisa-hilo",
+            type: "hit",
+            url: "https://www.tiktok.com/api/post/item/create/",
+            method: "POST",
+            removed: ["draft", "canvas_config"],
+            forced: ["post_type: 2 → 3"],
+            bytesIn: 100,
+            bytesOut: 80,
+          },
+          "*"
+        );
+
+        setTimeout(function () {
+          const hits = window.__saved.chisaHits || [];
+          check(
+            "guarda el registro del corte",
+            hits.length === 1 && hits[0].kind === "hit" && hits[0].removed.length === 2,
+            hits.length + " entrada(s)"
+          );
+
+          let status = null;
+          window.__onMessage({ type: "chisa:status" }, {}, function (res) {
+            status = res;
+          });
+          check(
+            "responde al popup con el estado",
+            !!status && status.ok === true && status.active === true,
+            JSON.stringify(status)
+          );
+
+          let pushed = null;
+          window.addEventListener("message", function (e) {
+            if (e.data && e.data.source === "chisa-hilo-ext" && e.data.active === false) {
+              pushed = e.data;
+            }
+          });
+          window.__onChanged({ chisaHilo: { newValue: { active: false, dryRun: true } } }, "local");
+          setTimeout(function () {
+            check(
+              "reacciona a los cambios de storage",
+              !!pushed && pushed.active === false && pushed.dryRun === true,
+              JSON.stringify(pushed)
+            );
+            const done = document.createElement("li");
+            done.textContent = "LISTO";
+            out.appendChild(done);
+          }, 60);
+        }, 120);
+      }, 120);
+    </script>
+  </body>
+</html>

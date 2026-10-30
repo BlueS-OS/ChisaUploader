@@ -1,0 +1,8 @@
+﻿# Cuerpos capturados por el banco de pruebas
+test/last-*.json
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
