@@ -162,6 +162,7 @@ ChisaUploader/
 ├─ popup.js          estado, registro, informe
 ├─ icons/            sello 千 en 16/32/48/128
 ├─ docs/             capturas
+├─ tools/pack.ps1    rehace el zip
 └─ test/             banco de pruebas (servidor + harness)
 ```
 
