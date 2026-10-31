@@ -28,7 +28,7 @@
         storage: {
           local: {
             get: function (keys, cb) {
-              cb({ chisaHilo: { active: true, dryRun: false } });
+              cb({ chisaHilo: { active: true, dryRun: false, canvas: true } });
             },
             set: function (obj) {
               Object.assign(window.__saved, obj);
@@ -70,7 +70,7 @@
       setTimeout(function () {
         check(
           "empuja la config al script de página",
-          !!gotConfig && gotConfig.active === true && gotConfig.dryRun === false,
+          !!gotConfig && gotConfig.active === true && gotConfig.dryRun === false && gotConfig.canvas === true,
           JSON.stringify(gotConfig)
         );
 
@@ -102,7 +102,7 @@
           });
           check(
             "responde al popup con el estado",
-            !!status && status.ok === true && status.active === true,
+            !!status && status.ok === true && status.active === true && status.canvas === true,
             JSON.stringify(status)
           );
 
@@ -112,11 +112,11 @@
               pushed = e.data;
             }
           });
-          window.__onChanged({ chisaHilo: { newValue: { active: false, dryRun: true } } }, "local");
+          window.__onChanged({ chisaHilo: { newValue: { active: false, dryRun: true, canvas: false } } }, "local");
           setTimeout(function () {
             check(
               "reacciona a los cambios de storage",
-              !!pushed && pushed.active === false && pushed.dryRun === true,
+              !!pushed && pushed.active === false && pushed.dryRun === true && pushed.canvas === false,
               JSON.stringify(pushed)
             );
             const done = document.createElement("li");

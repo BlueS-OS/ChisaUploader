@@ -35,10 +35,19 @@
         <span class="switch" aria-hidden="true"></span>
       </label>
 
+      <label class="switch-row sub" id="canvasRow">
+        <span class="switch-copy">
+          <strong>Modo lienzo (720)</strong>
+          <small>El editor no puede leer el vídeo (corte 720).</small>
+        </span>
+        <input id="canvas" class="sr" type="checkbox" checked />
+        <span class="switch" aria-hidden="true"></span>
+      </label>
+
       <label class="switch-row sub" id="dryRow">
         <span class="switch-copy">
           <strong>Solo observar</strong>
-          <small>No modifica nada: apunta lo que cortaría para comprobarlo antes.</small>
+          <small>No modifica nada: apunta lo que cortaría.</small>
         </span>
         <input id="dryRun" class="sr" type="checkbox" checked />
         <span class="switch" aria-hidden="true"></span>
@@ -73,7 +82,7 @@
 
     <footer class="foot">
       <span>千 local · sin servidores</span>
-      <span id="ver">v0.1.0</span>
+      <span id="ver">v0.2.0</span>
     </footer>
 
     <script src="popup.js"></script>

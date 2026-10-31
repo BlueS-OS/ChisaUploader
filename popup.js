@@ -7,6 +7,7 @@ const HAS_CHROME = typeof chrome !== "undefined" && !!chrome.tabs && !!chrome.st
 const store = {
   active: false,
   dryRun: true,
+  canvas: true,
   hits: [],
   tabId: null,
   onTikTok: false,
@@ -17,7 +18,7 @@ const store = {
 start();
 
 async function start() {
-  $("ver").textContent = "v" + (HAS_CHROME ? chrome.runtime.getManifest().version : "0.1.0");
+  $("ver").textContent = "v" + (HAS_CHROME ? chrome.runtime.getManifest().version : "0.2.0");
   bind();
 
   if (!HAS_CHROME) {
@@ -28,6 +29,7 @@ async function start() {
       alive: true,
       active: true,
       dryRun: false,
+      canvas: true,
       hits: new URLSearchParams(location.search).has("empty") ? [] : demoHits(),
     });
     render();
@@ -44,6 +46,7 @@ async function start() {
   const cfg = saved.chisaHilo || {};
   store.active = !!cfg.active;
   store.dryRun = cfg.dryRun !== false;
+  store.canvas = cfg.canvas !== false;
   store.hits = Array.isArray(saved.chisaHits) ? saved.chisaHits : [];
 
   render();
@@ -53,6 +56,7 @@ async function start() {
 
 function bind() {
   $("active").addEventListener("change", (e) => save({ active: e.target.checked }));
+  $("canvas").addEventListener("change", (e) => save({ canvas: e.target.checked }));
   $("dryRun").addEventListener("change", (e) => save({ dryRun: e.target.checked }));
   $("copy").addEventListener("click", copyReport);
   $("clear").addEventListener("click", clearLog);
@@ -65,7 +69,11 @@ function save(patch) {
   if (!HAS_CHROME) return;
 
   chrome.storage.local.set({
-    chisaHilo: { active: store.active, dryRun: store.dryRun },
+    chisaHilo: {
+      active: store.active,
+      dryRun: store.dryRun,
+      canvas: store.canvas,
+    },
   });
 
   if (store.tabId) {
@@ -74,6 +82,7 @@ function save(patch) {
         type: "chisa:config",
         active: store.active,
         dryRun: store.dryRun,
+        canvas: store.canvas,
       })
       .catch(() => {});
   }
@@ -94,6 +103,7 @@ function watch() {
       const cfg = changes.chisaHilo.newValue || {};
       store.active = !!cfg.active;
       store.dryRun = cfg.dryRun !== false;
+      store.canvas = cfg.canvas !== false;
       render();
     }
   });
@@ -122,6 +132,9 @@ async function ping() {
 
 function render() {
   $("active").checked = store.active;
+  $("canvas").checked = store.canvas;
+  $("canvas").disabled = !store.active;
+  $("canvasRow").classList.toggle("is-idle", !store.active);
   $("dryRun").checked = store.dryRun;
   $("dryRun").disabled = !store.active;
   $("dryRow").classList.toggle("is-idle", !store.active);
@@ -213,7 +226,12 @@ function shortPath(url) {
 async function copyReport() {
   const lines = [
     "Chisa · hilo de subida",
-    "activo: " + (store.active ? "sí" : "no") + " · modo: " + (store.dryRun ? "observar" : "cortar"),
+    "activo: " +
+      (store.active ? "sí" : "no") +
+      " · modo: " +
+      (store.dryRun ? "observar" : "cortar") +
+      " · lienzo: " +
+      (store.canvas ? "sí" : "no"),
     "",
   ];
 
@@ -274,7 +292,7 @@ function demoHits() {
       kind: "hit",
       method: "POST",
       url: "https://www.tiktok.com/api/post/item/create/?aid=1988",
-      removed: ["draft", "canvas_config", "vedit_segment_info", "post_type"],
+      removed: ["draft", "canvas_config", "vedit_segment_info"],
       forced: ["post_type: 2 → 3", "cloud_edit_is_use_video_canvas: → false"],
     },
     {

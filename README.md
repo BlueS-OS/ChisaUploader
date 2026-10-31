@@ -4,7 +4,7 @@
 > TikTok. Todo ocurre en tu equipo: **sin servidores, sin cuentas, sin Telegram**.
 > El vídeo no se sube a ningún sitio que no sea TikTok.
 
-**Descarga:** <https://blues-os.github.io/ChisaUploader/chisa-ext-0.1.0.zip> ·
+**Descarga:** <https://blues-os.github.io/ChisaUploader/chisa-ext-0.2.0.zip> ·
 **Web:** <https://blues-os.github.io/ChisaUploader/> ·
 **Código:** <https://github.com/BlueS-OS/ChisaUploader>
 
@@ -26,18 +26,33 @@ JSON antes de que salga:
 |---|---|
 | `draft` | el objeto de borrador que arrastra el editor |
 | `canvas_config` | la configuración del lienzo en la nube |
-| `vedit_segment_info`, `vedit_project`, `edit_common_info` | metadatos del editor de vídeo |
+| `vedit_segment_info` | metadatos del editor de vídeo |
 | `cloud_edit_is_use_video_canvas` | se fuerza a `false` |
 | `post_type` | si vale `2`, pasa a `3` |
-| `vedit_common_info`, `feature_common_info_list` | se limpian en profundidad |
+
+Solo se toca el cuerpo si trae alguna de estas raíces en el **primer nivel**:
+`single_post_req_list`, `vedit_common_info` o `post_common_info`. A partir de ahí
+se recorre el objeto entero.
 
 No toca el vídeo, ni el bitrate, ni la resolución, ni el códec. Solo el cuerpo
 JSON de la petición.
 
+### Modo lienzo (720)
+
+El JSON no basta: el editor web también abre el archivo con
+`URL.createObjectURL` para pasarlo por su lienzo en la nube. Con **Modo lienzo**
+encendido (por defecto), en las páginas de subida esa función devuelve siempre un
+blob inofensivo de 8 bytes. El editor no puede leer el vídeo, así que publica el
+archivo tal cual.
+
+Es la misma jugada que hace el modo 720 de otras herramientas, pero aquí sin
+servidor: el blob se crea en tu navegador y el vídeo sigue en tu equipo. Si algo
+raro pasa con la vista previa, apaga el interruptor y Chisa solo cortará el JSON.
+
 ### Cómo lo engancha
 
-- `page.js` corre en el mundo de la página y envuelve **`fetch`** y
-  **`XMLHttpRequest`**.
+- `page.js` corre en el mundo de la página y envuelve **`fetch`**,
+  **`XMLHttpRequest`** y **`URL.createObjectURL`**.
 - Solo actúa en peticiones **del mismo origen** (o de `*.tiktok.com`) y solo si el
   cuerpo es JSON y contiene alguna de las claves de arriba. Un JSON cualquiera de
   la página se queda intacto.
@@ -54,7 +69,7 @@ Dos caminos, el mismo resultado. El zip solo ahorra el `git clone`.
 
 **Con el zip** (recomendado):
 
-1. Descarga <https://blues-os.github.io/ChisaUploader/chisa-ext-0.1.0.zip> y
+1. Descarga <https://blues-os.github.io/ChisaUploader/chisa-ext-0.2.0.zip> y
    descomprímelo en una carpeta fija.
 2. Abre `edge://extensions` (o `chrome://extensions`).
 3. Activa **Modo de desarrollador**.
@@ -76,9 +91,11 @@ El primer paso es **mirar**, no cortar.
    o la que uses).
 2. Abre el popup: debe decir **«TikTok · en la subida»**.
 3. Activa **Cortar el hilo en la subida** y deja **Solo observar** encendido.
-4. Sube un vídeo de prueba. En el registro verás una entrada **observado** con los
+4. Deja **Modo lienzo (720)** como está (encendido): en el registro no se ve, pero
+   es lo que impide que el editor lea el vídeo.
+5. Sube un vídeo de prueba. En el registro verás una entrada **observado** con los
    campos que *cortaría*, sin haber tocado nada.
-5. Si el registro tiene sentido, apaga **Solo observar** y repite la subida.
+6. Si el registro tiene sentido, apaga **Solo observar** y repite la subida.
 
 El registro es la fuente de verdad: si una subida aparece como **visto** y «sin
 cambios», la extensión no encontró las claves (TikTok cambió el payload o usa
@@ -113,7 +130,7 @@ hay que depurar.
 - Manipular el payload de subida va contra los términos de TikTok: puede costar la
   cuenta. Usa una cuenta de prueba y el modo observar primero.
 - TikTok cambia el payload a menudo. Si deja de funcionar, el registro dirá qué se
-  está viendo; las reglas están en `page.js` (`DELETE_KEYS`, `DEEP_ROOTS`).
+  está viendo; las reglas están en `page.js` (`DELETE_KEYS`, `TRIGGERS`).
 - El parcheo es en memoria: no modifica archivos ni deja rastro en disco.
 
 ---
@@ -124,11 +141,15 @@ Banco de pruebas local (`test/`), con un servidor que recibe el cuerpo real:
 
 | Caso | Resultado |
 |---|---|
-| `fetch` con payload de subida | `post_type: 3`, `cloud_edit…: false`, sin `draft`/`canvas_config`/`vedit_*` |
+| `fetch` con payload de subida | `post_type: 3`, `cloud_edit…: false`, sin `draft`/`canvas_config`/`vedit_segment_info` |
 | `fetch(new Request(...))` con el mismo payload | idéntico al anterior |
 | `XMLHttpRequest` con el mismo payload | idéntico al anterior |
 | JSON ajeno (`{"hello":"mundo"}`) | intacto, sin registro |
+| Payload sin raíces de primer nivel | intacto, sin registro |
 | Modo observar | cuerpo original intacto + entrada **observado** |
+| `URL.createObjectURL` en `/upload` | devuelve el blob de 8 bytes |
+| `URL.createObjectURL` fuera de `/upload` | devuelve el archivo original |
+| `URL.createObjectURL` observando o con lienzo apagado | devuelve el archivo original |
 
 Además, el puente (`content.js`) se probó con un stub de `chrome.*`:
 empuja la config, guarda el registro, responde al popup y reacciona a los cambios
@@ -153,9 +174,9 @@ Los cuerpos recibidos se guardan en `test/last-*.json` (ignorados por git).
 ChisaUploader/
 ├─ index.html        página de descarga (GitHub Pages)
 ├─ site/site.css     estilos de la página
-├─ chisa-ext-0.1.0.zip  extensión lista para cargar
+├─ chisa-ext-0.2.0.zip  extensión lista para cargar
 ├─ manifest.json     MV3: content scripts en MAIN e ISOLATED
-├─ page.js           enganche de fetch/XHR + reglas de corte
+├─ page.js           enganche de fetch/XHR/createObjectURL + reglas de corte
 ├─ content.js        puente con chrome.storage y registro
 ├─ popup.html        interfaz
 ├─ popup.css         grafito, hueso y rojo

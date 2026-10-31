@@ -49,9 +49,9 @@
           </p>
 
           <div class="actions">
-            <a class="btn primary" href="./chisa-ext-0.1.0.zip" download>
+            <a class="btn primary" href="./chisa-ext-0.2.0.zip" download>
               Descargar extensión
-              <small>zip · 0.1.0</small>
+              <small>zip · 0.2.0</small>
             </a>
             <a class="btn" href="#instalar">Cómo se instala</a>
           </div>
@@ -59,13 +59,14 @@
           <ul class="facts">
             <li><strong>Sin servidores</strong> ni cuentas ni Telegram</li>
             <li><strong>Sin Device ID</strong> ni listas de baneos</li>
+            <li><strong>Modo lienzo (720)</strong> contra la recompresión</li>
             <li><strong>Modo observar</strong> para probar sin riesgo</li>
           </ul>
         </div>
 
         <figure class="shot">
-          <img src="./docs/preview.png" width="380" height="590" alt="Popup de la extensión: estado, interruptores y registro de cortes." />
-          <figcaption>el popup · 380 × 590</figcaption>
+          <img src="./docs/preview.png" width="380" height="598" alt="Popup de la extensión: estado, interruptores y registro de cortes." />
+          <figcaption>el popup · 380 × 598</figcaption>
         </figure>
       </section>
 
@@ -105,19 +106,20 @@
             <tbody>
               <tr><td><code>draft</code></td><td>quita el borrador que arrastra el editor</td></tr>
               <tr><td><code>canvas_config</code></td><td>quita la configuración del lienzo en la nube</td></tr>
-              <tr><td><code>vedit_segment_info</code> · <code>vedit_project</code> · <code>edit_common_info</code></td><td>quita metadatos del editor de vídeo</td></tr>
+              <tr><td><code>vedit_segment_info</code></td><td>quita metadatos del editor de vídeo</td></tr>
               <tr><td><code>cloud_edit_is_use_video_canvas</code></td><td>se fuerza a <code>false</code></td></tr>
               <tr><td><code>post_type</code></td><td>si vale <code>2</code>, pasa a <code>3</code></td></tr>
-              <tr><td><code>vedit_common_info</code> · <code>feature_common_info_list</code></td><td>se limpian en profundidad</td></tr>
+              <tr><td><code>URL.createObjectURL</code></td><td>en la subida devuelve un blob de 8 bytes: el editor no lee el vídeo</td></tr>
             </tbody>
           </table>
         </div>
 
         <p class="section-note">
-          Solo actúa en peticiones del mismo origen o de <code>*.tiktok.com</code>, y
-          solo si el cuerpo es JSON con alguna de esas claves. Un JSON cualquiera de
-          la página se queda intacto. Si algo falla, se envía el original: nunca
-          rompe la subida.
+          Solo se toca el cuerpo si trae <code>single_post_req_list</code>,
+          <code>vedit_common_info</code> o <code>post_common_info</code> en el primer
+          nivel; a partir de ahí se recorre entero. Solo actúa en peticiones del mismo
+          origen o de <code>*.tiktok.com</code>. Un JSON cualquiera de la página se
+          queda intacto. Si algo falla, se envía el original: nunca rompe la subida.
         </p>
       </section>
 
@@ -141,6 +143,13 @@
             <span class="tag tag-red">cuando ya lo entiendes</span>
           </article>
         </div>
+        <p class="section-note">
+          Además, el interruptor <b>Modo lienzo (720)</b> —encendido por defecto— hace
+          que <code>URL.createObjectURL</code> devuelva un blob inofensivo en la
+          pantalla de subida: el editor no puede leer el archivo, así que publica el
+          vídeo tal cual. Si la vista previa diera problemas, se apaga y Chisa solo
+          corta el JSON.
+        </p>
         <p class="section-note">
           Si una subida aparece como <b>visto · sin cambios</b>, TikTok cambió el
           payload o usa multipart: el registro dirá qué se está viendo y las reglas
@@ -172,7 +181,7 @@
     <footer class="foot">
       <div class="foot-left">
         <span class="seal-mini" aria-hidden="true">千</span>
-        <span>Chisa · hilo de subida · v0.1.0</span>
+        <span>Chisa · hilo de subida · v0.2.0</span>
       </div>
       <nav class="foot-links">
         <a href="https://github.com/BlueS-OS/ChisaUploader">código</a>

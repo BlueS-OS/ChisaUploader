@@ -9,7 +9,7 @@
   const HITS = "chisaHits";
   const MAX_HITS = 25;
 
-  let cfg = { active: false, dryRun: true };
+  let cfg = { active: false, dryRun: true, canvas: true };
 
   function push() {
     window.postMessage(
@@ -18,6 +18,7 @@
         type: "config",
         active: cfg.active,
         dryRun: cfg.dryRun,
+        canvas: cfg.canvas,
       },
       "*"
     );
@@ -26,7 +27,11 @@
   function load() {
     chrome.storage.local.get(KEY, function (data) {
       const saved = data[KEY] || {};
-      cfg = { active: !!saved.active, dryRun: saved.dryRun !== false };
+      cfg = {
+        active: !!saved.active,
+        dryRun: saved.dryRun !== false,
+        canvas: saved.canvas !== false,
+      };
       push();
     });
   }
@@ -34,7 +39,11 @@
   chrome.storage.onChanged.addListener(function (changes, area) {
     if (area !== "local" || !changes[KEY]) return;
     const saved = changes[KEY].newValue || {};
-    cfg = { active: !!saved.active, dryRun: saved.dryRun !== false };
+    cfg = {
+      active: !!saved.active,
+      dryRun: saved.dryRun !== false,
+      canvas: saved.canvas !== false,
+    };
     push();
   });
 
@@ -74,13 +83,18 @@
         ok: true,
         active: cfg.active,
         dryRun: cfg.dryRun,
+        canvas: cfg.canvas,
         href: location.href,
       });
       return;
     }
 
     if (message.type === "chisa:config") {
-      cfg = { active: !!message.active, dryRun: !!message.dryRun };
+      cfg = {
+        active: !!message.active,
+        dryRun: !!message.dryRun,
+        canvas: message.canvas !== false,
+      };
       push();
       reply({ ok: true });
     }

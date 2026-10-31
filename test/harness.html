@@ -75,22 +75,40 @@
       });
 
       const payload = {
-        post_type: 2,
-        draft: { id: 1 },
-        canvas_config: { mode: "cloud" },
-        vedit_segment_info: [{ a: 1 }],
-        vedit_project: { x: 1 },
-        edit_common_info: { y: 1 },
-        cloud_edit_is_use_video_canvas: true,
-        title: "prueba",
-        nested: {
-          vedit_common_info: { draft: true, keep: 1 },
-          feature_common_info_list: [{ canvas_config: 1 }],
+        single_post_req_list: [
+          {
+            post_type: 2,
+            draft: { id: 1 },
+            canvas_config: { mode: "cloud" },
+            vedit_segment_info: [{ a: 1 }],
+            cloud_edit_is_use_video_canvas: true,
+            title: "prueba",
+            nested: {
+              vedit_common_info: { draft: true, keep: 1 },
+              feature_common_info_list: [{ canvas_config: 1 }],
+            },
+          },
+        ],
+        post_common_info: {
+          post_type: 2,
+          cloud_edit_is_use_video_canvas: true,
+          keep: "sí",
         },
       };
 
+      const deepOnly = {
+        wrapper: { single_post_req_list: [{ draft: 1, post_type: 2 }] },
+      };
+
+      function bytes(url) {
+        return fetch(url)
+          .then((r) => r.arrayBuffer())
+          .then((b) => b.byteLength)
+          .catch(() => -1);
+      }
+
       async function run() {
-        log("config activa · dryRun=false");
+        log("config activa · dryRun=false · canvas=true");
 
         const r1 = await fetch("/api/post", {
           method: "POST",
@@ -118,13 +136,45 @@
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ hello: "mundo" }),
         });
-        log("fetch /api/other (sin disparadores) -> " + r3.status);
+        log("fetch /api/other (JSON ajeno) -> " + r3.status);
+
+        const r5 = await fetch("/api/deep", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(deepOnly),
+        });
+        log("fetch /api/deep (disparador anidado) -> " + r5.status);
+
+        const blob = new Blob([new Uint8Array(64)], { type: "video/mp4" });
+
+        history.replaceState(null, "", "/harness.html");
+        const realUrl = URL.createObjectURL(blob);
+        const realSize = await bytes(realUrl);
+        log("createObjectURL fuera de /upload -> " + realSize + " bytes (esperado 64)");
+
+        history.replaceState(null, "", "/upload");
+        const fakeUrl = URL.createObjectURL(blob);
+        const fakeSize = await bytes(fakeUrl);
+        log("createObjectURL en /upload -> " + fakeSize + " bytes (esperado 8)");
 
         window.postMessage(
-          { source: "chisa-hilo-ext", type: "config", active: true, dryRun: true },
+          { source: "chisa-hilo-ext", type: "config", active: true, dryRun: false, canvas: false },
           "*"
         );
         await new Promise((r) => setTimeout(r, 250));
+        const offUrl = URL.createObjectURL(blob);
+        const offSize = await bytes(offUrl);
+        log("createObjectURL con lienzo apagado -> " + offSize + " bytes (esperado 64)");
+
+        window.postMessage(
+          { source: "chisa-hilo-ext", type: "config", active: true, dryRun: true, canvas: true },
+          "*"
+        );
+        await new Promise((r) => setTimeout(r, 250));
+
+        const obsUrl = URL.createObjectURL(blob);
+        const obsSize = await bytes(obsUrl);
+        log("createObjectURL observando -> " + obsSize + " bytes (esperado 64)");
 
         const r4 = await fetch("/api/dry", {
           method: "POST",

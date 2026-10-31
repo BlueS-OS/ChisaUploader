@@ -6,25 +6,18 @@
   "use strict";
 
   if (window.__CHISA_HILO__) return;
-  window.__CHISA_HILO__ = { version: "0.1.0" };
+  window.__CHISA_HILO__ = { version: "0.2.0" };
 
-  /* Reglas: las mismas que usa el editor web de TikTok para decidir si un
-     vídeo pasa por su lienzo en la nube (y por tanto si lo recomprime). */
-  const DELETE_KEYS = [
-    "draft",
-    "canvas_config",
-    "vedit_segment_info",
-    "vedit_project",
-    "edit_common_info",
-  ];
-  const DEEP_ROOTS = ["vedit_common_info", "feature_common_info_list"];
-  const TRIGGERS = DELETE_KEYS.concat(DEEP_ROOTS, [
-    "cloud_edit_is_use_video_canvas",
-    "post_type",
-  ]);
+  /* Reglas del modo 720: las mismas que usa el editor web de TikTok para
+     decidir si un vídeo pasa por su lienzo en la nube (y si lo recomprime). */
+  const DELETE_KEYS = ["draft", "canvas_config", "vedit_segment_info"];
+
+  /* El cuerpo solo se toca si trae una de estas raíces en el primer nivel. */
+  const TRIGGERS = ["single_post_req_list", "vedit_common_info", "post_common_info"];
 
   let active = false;
   let dryRun = true;
+  let canvas = true;
   let gotConfig = false;
 
   function post(type, data) {
@@ -93,19 +86,11 @@
     };
   }
 
-  function hasTrigger(node, depth) {
-    if (!node || typeof node !== "object" || depth > 8) return false;
-
-    if (Array.isArray(node)) {
-      for (const item of node) if (hasTrigger(item, depth + 1)) return true;
-      return false;
-    }
-
-    for (const key of Object.keys(node)) {
-      if (TRIGGERS.indexOf(key) !== -1) return true;
-      if (hasTrigger(node[key], depth + 1)) return true;
-    }
-    return false;
+  function hasTrigger(node) {
+    if (!node || typeof node !== "object" || Array.isArray(node)) return false;
+    return TRIGGERS.some(function (key) {
+      return Object.prototype.hasOwnProperty.call(node, key);
+    });
   }
 
   /* Devuelve el body ya cortado, o null si no hay nada que tocar. */
@@ -118,7 +103,7 @@
     } catch (_) {
       return null;
     }
-    if (!body || typeof body !== "object" || !hasTrigger(body, 0)) return null;
+    if (!body || typeof body !== "object" || !hasTrigger(body)) return null;
 
     const result = sanitize(body);
     const info = {
@@ -144,6 +129,43 @@
     post("hit", info);
     return out;
   }
+
+  /* ---------------------------------------------------------------- */
+  /* lienzo (modo 720)                                                 */
+  /* ---------------------------------------------------------------- */
+
+  function isUploadPage() {
+    const href = location.href;
+    return href.indexOf("/upload") !== -1 || href.indexOf("/creator-center") !== -1;
+  }
+
+  /* Un blob de 8 bytes, con la misma URL para cualquier vídeo: el editor de
+     TikTok no puede leer el archivo y no lo pasa por su lienzo en la nube. */
+  const nativeCreateObjectURL = URL.createObjectURL;
+  let dummyUrl = null;
+
+  function dummy() {
+    if (dummyUrl) return dummyUrl;
+    try {
+      const bytes = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+      dummyUrl = nativeCreateObjectURL.call(URL, new Blob([bytes], { type: "application/octet-stream" }));
+    } catch (_) {
+      dummyUrl = null;
+    }
+    return dummyUrl;
+  }
+
+  URL.createObjectURL = function (obj) {
+    try {
+      if (active && !dryRun && canvas && isUploadPage()) {
+        const url = dummy();
+        if (url) return url;
+      }
+    } catch (_) {
+      /* ante cualquier duda, se devuelve el objeto original */
+    }
+    return nativeCreateObjectURL.call(URL, obj);
+  };
 
   /* ---------------------------------------------------------------- */
   /* fetch                                                             */
@@ -256,7 +278,9 @@
       (document.body || document.documentElement).appendChild(el);
     }
 
-    el.textContent = "千 Chisa · " + (dryRun ? "observando" : "corte activo");
+    el.textContent =
+      "千 Chisa · " +
+      (dryRun ? "observando" : "corte activo" + (canvas ? " + lienzo" : ""));
     el.style.cssText = [
       "position:fixed",
       "right:16px",
@@ -283,6 +307,7 @@
 
     active = !!data.active;
     dryRun = !!data.dryRun;
+    canvas = data.canvas !== false;
     gotConfig = true;
     badge();
   });
@@ -301,7 +326,7 @@
       clearInterval(timer);
       return;
     }
-    post("ready", { version: "0.1.0" });
+    post("ready", { version: "0.2.0" });
   }, 250);
-  post("ready", { version: "0.1.0" });
+  post("ready", { version: "0.2.0" });
 })();
