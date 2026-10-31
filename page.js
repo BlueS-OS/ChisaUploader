@@ -66,7 +66,7 @@
         continue;
       }
 
-      if (key === "cloud_edit_is_use_video_canvas" && value !== false) {
+      if (key === "cloud_edit_is_use_video_canvas" && value !== undefined && value !== false) {
         node[key] = false;
         out.forced.push(where + ": → false");
         continue;
@@ -89,7 +89,7 @@
   function hasTrigger(node) {
     if (!node || typeof node !== "object" || Array.isArray(node)) return false;
     return TRIGGERS.some(function (key) {
-      return Object.prototype.hasOwnProperty.call(node, key);
+      return !!node[key];
     });
   }
 
